@@ -7,6 +7,14 @@ def sigmoid(x):
     return 1. / (1. + (2.7182818284590452 ** (-x)))
 
 
+def sigmoid2(x):
+    return 1 / (1 + math.pow(math.e, -x))
+
+
+def sigmoid3(x):
+  return 1 / (1 + math.exp(-x))
+
+
 def output(m, x, b):
     return (m * x) + b
 
@@ -17,12 +25,15 @@ def cross_entropy(predicted, actual):
     return  L - R
 
 
-def gen_fake_data(observations=100, intercept=.35):
+def gen_fake_data(observations=100, intercept=.35, fuzz=.06):
+    def fuzzit(i):
+        return i + (random.randint(fuzz * -100, fuzz * 100) / 100.)
+
     d = []
 
     for n in range(observations):
         r = random.random()
-        d.append((r, 1 if r >= intercept else 0))
+        d.append((r, 1 if r >= fuzzit(intercept) else 0))
 
     return d
 
@@ -52,36 +63,40 @@ def main():
 
     plt.scatter(X, Y, c=Y, cmap='rainbow')
 
-    SX, SY = plot_sigmoid(m, b)
-    plt.plot(SX, SY, color='blue')
+    # SX, SY = plot_sigmoid(m, b)
+    # plt.plot(SX, SY, color='blue')
 
-    for epoch in range(2000):
+    for epoch in range(2):
         print(f'epoch {epoch}')
+        sum_error = 0
 
         for t in train:
             x = t[0]
             predicted = sigmoid(output(m, x, b))
+
             actual = t[1]
 
-            delta_m = x * (predicted - actual)
-            print(predicted, actual, x, delta_m, m)
+            delta_m = abs(predicted - actual)
+            sum_error += delta_m
 
-            m = m - (delta_m * learning_rate)
+            print(predicted, actual, x, delta_m, m, b)
 
-            # print(predicted, actual, cost, m, b, delta_m, delta_b)
+        mae1 = sum_error / len(train)
+        mae2 = (1. / len(train)) * sum_error
+        print('mean abs err', mae1, mae2)
 
-        num_correct = 0.
+        # num_correct = 0.
 
-        for t in test:
-            predicted = sigmoid(output(m, x, b))
+        # for t in test:
+        #     predicted = sigmoid(output(m, t[0], b))
 
-            if predicted == t[1]:
-                num_correct += 1.
+        #     if predicted == t[1]:
+        #         num_correct += 1.
 
-        print('accuracy', num_correct / len(test), m, b)
+        # print('accuracy', num_correct / len(test), m, b)
 
-    SX, SY = plot_sigmoid(m, b)
-    plt.plot(SX, SY, color='green')
+    # SX, SY = plot_sigmoid(m, b)
+    # plt.plot(SX, SY, color='green')
 
     plt.savefig('file.png')
 
