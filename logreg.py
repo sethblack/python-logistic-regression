@@ -2,6 +2,7 @@ import math
 import matplotlib.pyplot as plt
 import random
 
+# https://en.wikipedia.org/wiki/Activation_function
 
 def sigmoid(x):
     return 1. / (1. + (2.7182818284590452 ** (-x)))
