@@ -7,7 +7,7 @@ from sklearn import metrics
 # https://en.wikipedia.org/wiki/Activation_function
 
 def sigmoid(x):
-    return 1. / (1. + (2.7182818284590452 ** (-x)))
+    return 1 / (1 + (2.7182818284590452 ** (-x)))
 
 
 def sigmoid2(x):
@@ -18,10 +18,17 @@ def sigmoid3(x):
   return 1 / (1 + math.exp(-x))
 
 
-def cross_entropy(predicted, actual):
-    L = ((-actual) * math.log(predicted))
-    R = ((-actual) * math.log(-predicted))
-    return  L - R
+def cross_entropy(actuals, predictions):
+    m = len(predictions)
+
+    ce = 0.
+
+    for Y, Y_hat in zip(actuals, predictions):
+        Y_hat = Y_hat if Y_hat < 1 else 1 - 1e-15
+
+        ce += ((Y * math.log(Y_hat)) + ((1 - Y) * (math.log(1 - Y_hat))))
+
+    return (-1 / m) * ce
 
 
 def gen_fake_data(observations=100, intercept=.35, fuzz=.06):
@@ -54,7 +61,7 @@ def main():
     train = gen_fake_data()
     test = gen_fake_data(observations=20)
 
-    m = 1.
+    m = -100.
     learning_rate = 0.1
 
     X, Y = zip(*train)
@@ -69,7 +76,7 @@ def main():
     JX = []
     JY = []
 
-    for epoch in range(10):
+    for epoch in range(2000):
         print(f'epoch {epoch}')
 
         sum_error = 0.
@@ -79,50 +86,54 @@ def main():
 
         for t in train:
             x = t[0]
-            predicted = sigmoid(m * x)
+            predicted = sigmoid3(m * x)
 
             actual = t[1]
 
-            delta_m = abs(predicted - actual)
+            delta_m = abs(actual - predicted)
             sum_error += delta_m
             squared_error += (actual - predicted) ** 2
 
             predictions.append(predicted)
-            actuals.append(x)
+            actuals.append(actual)
 
             # print(predicted, actual, x, delta_m, m)
 
-        mae1 = sum_error / len(train)
-        mae2 = (1. / len(train)) * sum_error
+        mae1 = (1. / len(train)) * sum_error
+        mae2 = metrics.mean_absolute_error(actuals, predictions)
 
-        mse1 = squared_error / len(train)
+        mse1 = (1. / len(train)) * squared_error
         mse2 = metrics.mean_squared_error(actuals, predictions)
 
-        print('mean abs err', mae1, mae2)
-        print('mean sq err', mse1, mse2)
+        ce1 = cross_entropy(actuals, predictions)
+        ce2 = metrics.log_loss(actuals, predictions)
 
-        m -= learning_rate * (previous_error - mae1)
+        print('m:', m, 'mse:', mse1, 'ce1:', ce1, 'ce2', ce2)
 
-        print('new m', m, learning_rate, previous_error, mae1)
-        JX.append(mae1)
-        JY.append(m)
+        JX.append(m)
+        JY.append(ce2)
 
-        previous_error = mae1
+        #m -= learning_rate * mse1
+        m += learning_rate * ce2
+
+        # print('updated m:', m, 'learning rate:', learning_rate, 'previous err:', previous_error)
 
         num_correct = 0.
 
         for t in test:
-            predicted = sigmoid(m * t[0])
+            predicted = int(sigmoid3(m * t[0]))
 
             if predicted == t[1]:
                 num_correct += 1.
+
+            print('p', predicted, 't', t[1])
 
         print('accuracy', num_correct / len(test), m)
 
         # SX, SY = plot_sigmoid(m)
         # plt.plot(SX, SY, color='green')
 
-    plt.plot(JX, JY, color='purple')
+    plt.scatter(JX, JY, color='purple')
 
     plt.savefig('file.png')
 
